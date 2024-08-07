@@ -1,28 +1,30 @@
-# Usar uma imagem base do Python
-FROM python:3.12-slim
+ARG PYTHON_VERSION=3.12-slim-bullseye
 
-# Definir variáveis de ambiente
+FROM python:${PYTHON_VERSION}
+
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Criar e definir o diretório de trabalho
-WORKDIR /app
+# install psycopg2 dependencies.
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copiar os arquivos de dependências
-COPY requirements.txt /app/
+RUN mkdir -p /code
 
-# Instalar as dependências
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+WORKDIR /code
 
-# Copiar o código da aplicação
-COPY . /app/
+COPY requirements.txt /tmp/requirements.txt
+RUN set -ex && \
+    pip install --upgrade pip && \
+    pip install -r /tmp/requirements.txt && \
+    rm -rf /root/.cache/
+COPY . /code
 
-# Rodar o collectstatic para coletar arquivos estáticos
+ENV SECRET_KEY "KZktRm4QrMmH06lbFm98EC7m7tzg9hV9aSydZuqwv0P1lZ122U"
 RUN python manage.py collectstatic --noinput
 
-# Comando para iniciar o servidor Django
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "myproject.wsgi:application"]
-
-# Expor a porta que o Django irá usar
 EXPOSE 8000
+
+CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "app.wsgi"]
