@@ -7,8 +7,6 @@ urlpatterns = [
 
     path('api/v1/', include('qranalizer.urls')),
 
-    path('api/v1/', include('accounts.urls')),
-
     path('api/v1/', include('ranking.urls'))
 ]
 
